@@ -1,3 +1,4 @@
+# Pipeline Workflow definition
 workflow:
   rules:
     # 1) Skip pipeline if commit is a tag or has a semantic-release commit message
@@ -38,8 +39,8 @@ build_image:
     - docker:27.5.1-dind
   script:
     - echo "$CI_REGISTRY_TOKEN" | docker login registry.gitlab.com -u CI_REGISTRY_TOKEN --password-stdin
-    - docker build -t "$CI_REGISTRY_IMAGE:latest" .
-    - docker push "$CI_REGISTRY_IMAGE:latest"
+    - docker build -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA" .
+    - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
   rules:
     - if: '$CI_COMMIT_TAG'
       when: never
@@ -58,7 +59,7 @@ trivy_scan:
     name: aquasec/trivy:latest
     entrypoint: ["/bin/sh", "-c"]
   script:
-    - trivy image "$CI_REGISTRY_IMAGE:latest"
+    - trivy image "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
   allow_failure: true
   rules:
     - when: on_success
@@ -69,10 +70,11 @@ trivy_misconfig:
     name: aquasec/trivy:latest
     entrypoint: ["/bin/sh", "-c"]
   script:
-    - trivy image --image-config-scanners misconfig "$CI_REGISTRY_IMAGE:latest"
+    - trivy image --image-config-scanners misconfig "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
   allow_failure: true
   rules:
     - when: on_success
+
 # ------------------------------------------------------------------------------
 # RUN SEMANTIC-RELEASE
 # (Runs only on main/master, after security_scan)
@@ -103,6 +105,45 @@ semantic_release:
     - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master"'
       when: on_success
 
+# ------------------------------------------------------------------------------
+# TAG AND PUSH THE IMAGE
+# (Runs only on main/master, after semantic_release)
+# ------------------------------------------------------------------------------
+
+# Hidden YAML anchor that defines our check_and_tag function
+.check_and_tag_function: &check_and_tag_function |
+  check_and_tag() {
+
+    # Auth in Docker Registry
+    docker login -u "$CI_REGISTRY" -p "$CI_REGISTRY_TOKEN" "$CI_REGISTRY"
+
+    # 1) Validate if the newly built image exists
+    if ! docker manifest inspect "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA" > /dev/null 2>&1; then
+      echo "WARN: There's no new image built. ... That's All Folks o/"
+      exit 0
+    fi
+
+    # 2) If RELEASE_VERSION is empty, get the most recent tag from the repo
+    if [ -z "$RELEASE_VERSION" ]; then
+      TAG_VERSION="$(git describe --tags --abbrev=0 2>/dev/null || echo 'latest')"
+    else
+      TAG_VERSION="$RELEASE_VERSION"
+    fi
+
+    # 3) Validate if $CI_REGISTRY_IMAGE:$TAG_VERSION already exists
+    if docker manifest inspect "$CI_REGISTRY_IMAGE:$TAG_VERSION" > /dev/null 2>&1; then
+      echo "WARN: Tag Version $TAG_VERSION already in use: $CI_REGISTRY_IMAGE:$TAG_VERSION ... That's All Folks o/"
+      exit 0
+    fi
+
+    # 4) Everything is valid → tag the newly built image and push
+    docker pull "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+    docker tag "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA" "$CI_REGISTRY_IMAGE:$TAG_VERSION"
+    docker push "$CI_REGISTRY_IMAGE:$TAG_VERSION"
+    echo "DONE! New Image Tagged: $CI_REGISTRY_IMAGE:$TAG_VERSION"
+    exit 0
+  }
+
 tag_image:
   stage: tag_image
   image: docker:27.5.1-alpine3.21
@@ -112,16 +153,13 @@ tag_image:
     - job: semantic_release
       artifacts: true
   script:
-    - docker login -u "$CI_REGISTRY" -p "$CI_REGISTRY_TOKEN" "$CI_REGISTRY"
-    - docker pull "$CI_REGISTRY_IMAGE:latest"
-    - source release_version.txt
     - |
-      if [ -z "$RELEASE_VERSION" ]; then
-        echo "WARN: There's no new tag! RELEASE_VERSION is empty. ... That's All Folks o/"
-        exit 0
+      # Source the release_version.txt if available (from semantic_release)
+      if [ -f release_version.txt ]; then
+        source release_version.txt
       fi
-    - docker tag "$CI_REGISTRY_IMAGE:latest" "$CI_REGISTRY_IMAGE:$RELEASE_VERSION"
-    - docker push "$CI_REGISTRY_IMAGE:$RELEASE_VERSION"
+    - *check_and_tag_function
+    - check_and_tag || exit 1
   rules:
     - if: '$CI_COMMIT_TAG'
       when: never
