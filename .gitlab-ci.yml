@@ -12,10 +12,13 @@ workflow:
     - if: '$CI_OPEN_MERGE_REQUESTS'
       when: never
 
-    # 4) Otherwise, run pipeline
+    # 4) If the Dockerfile changes, run pipeline
     - changes:
       - Dockerfile
       when: always
+
+    # 4) Otherwise, do not run pipeline
+    - when: never
 
 # Stages declaration
 stages:
@@ -55,7 +58,8 @@ trivy_scan:
     name: aquasec/trivy:latest
     entrypoint: ["/bin/sh", "-c"]
   script:
-    - trivy image --exit-code 0 "$CI_REGISTRY_IMAGE:latest"
+    - trivy image "$CI_REGISTRY_IMAGE:latest"
+  allow_failure: true
   rules:
     - when: on_success
 
@@ -65,10 +69,10 @@ trivy_misconfig:
     name: aquasec/trivy:latest
     entrypoint: ["/bin/sh", "-c"]
   script:
-    - trivy image --exit-code 0 --image-config-scanners misconfig "$CI_REGISTRY_IMAGE:latest"
+    - trivy image --image-config-scanners misconfig "$CI_REGISTRY_IMAGE:latest"
+  allow_failure: true
   rules:
     - when: on_success
-
 # ------------------------------------------------------------------------------
 # RUN SEMANTIC-RELEASE
 # (Runs only on main/master, after security_scan)
