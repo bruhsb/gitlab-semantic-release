@@ -157,15 +157,14 @@ semantic_release:
 
     # 3) Validate if $CI_REGISTRY_IMAGE:$TAG_VERSION already exists
     if docker manifest inspect "$CI_REGISTRY_IMAGE:$TAG_VERSION" > /dev/null 2>&1; then
-      echo "WARN: Tag Version $TAG_VERSION already in use: $CI_REGISTRY_IMAGE:$TAG_VERSION ... Updating tag latest"
-      docker pull "$CI_REGISTRY_IMAGE:$TAG_VERSION"
-      docker tag "$CI_REGISTRY_IMAGE:$TAG_VERSION" "$CI_REGISTRY_IMAGE:latest"
-      docker push "$CI_REGISTRY_IMAGE:latest"
+      echo "WARN: Tag Version $TAG_VERSION already in use: $CI_REGISTRY_IMAGE:$TAG_VERSION"
       echo "... That's All Folks o/"
       exit 0
     fi
 
     # 4) Everything is valid → tag the newly built image and push
+
+    echo "In Progress: Publishing new tag :$TAG_VERSION ... and updating tag latest"
     docker pull "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
     docker tag "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA" "$CI_REGISTRY_IMAGE:$TAG_VERSION"
     docker tag "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA" "$CI_REGISTRY_IMAGE:latest"
