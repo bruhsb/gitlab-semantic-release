@@ -32,6 +32,7 @@ workflow:
 
     # 6) Otherwise, do not run pipeline
     - when: never
+
 # Stages declaration
 stages:
   - build
@@ -52,6 +53,7 @@ build_image:
     - echo "$CI_REGISTRY_TOKEN" | docker login registry.gitlab.com -u CI_REGISTRY_TOKEN --password-stdin
     - docker build -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA" .
     - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+  interruptible: true
   rules:
     # If full pipeline, always run
     - if: '$PIPELINE_MODE == "full" || $PIPELINE_MODE == "FULL"'
@@ -125,8 +127,7 @@ semantic_release:
       when: always
     - if: '$CI_COMMIT_TAG'
       when: never
-    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master"'
-      when: on_success
+    - when: always
 
 # ------------------------------------------------------------------------------
 # TAG AND PUSH THE IMAGE

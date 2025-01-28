@@ -18,7 +18,7 @@ RUN apk update && apk upgrade && \
     rm -rf /var/cache/apk/* /root/.npm /tmp/*
 
 # Add a basic health check
-HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD node --version || exit 1
+HEALTHCHECK --interval=25s --timeout=5s --retries=3 CMD node --version || exit 1
 
 # Verify installations
 RUN node --version && npm --version
