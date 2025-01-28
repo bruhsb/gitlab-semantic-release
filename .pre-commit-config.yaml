@@ -1,0 +1,31 @@
+repos:
+  # --------------------------------------------------------------------------
+  # Basic Pre-Commit Hooks
+  # --------------------------------------------------------------------------
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      # Checks all YAML files end with a newline and have valid syntax.
+      - id: check-yaml
+      # Ensures there are no extraneous whitespace.
+      - id: trailing-whitespace
+      # Checks that files end with a newline.
+      - id: end-of-file-fixer
+
+  # Use Prettier to auto-format Markdown
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: "v4.0.0-alpha.8"
+    hooks:
+      - id: prettier
+        name: prettier-markdown
+        files: '\.md'
+  # --------------------------------------------------------------------------
+  # Dockerfile linting using Hadolint
+  # --------------------------------------------------------------------------
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint
+        name: hadolint
+        files: Dockerfile
+        types: [file]

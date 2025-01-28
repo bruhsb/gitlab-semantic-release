@@ -1,4 +1,6 @@
-branches: ['master']
+branches:
+  - main
+  - master
 ci: true
 debug: true
 dryRun: false
@@ -7,7 +9,7 @@ tagFormat: '${version}'
 # Global plugin options (will be passed to all plugins)
 preset: 'conventionalcommits'
 gitlabUrl: 'https://gitlab.com/' # your gitlab url
-slackWebhook: 'https://slack.xxx.com/hooks/q3dabbqc6yjyg9x6616o3atgkkr'
+# slackWebhook: 'https://slack.xxx.com/hooks/q3dabbqc6yjyg9x6616o3atgkkr'
 
 # Responsible for verifying conditions necessary to proceed with the release:
 # configuration is correct, authentication token are valid, etc...
@@ -41,9 +43,14 @@ generateNotes:
 # and pushing a commit.
 prepare:
   - path: '@semantic-release/changelog'
+  - path: '@semantic-release/exec'
+    # For example, a shell script that modifies README.md to add or update content
+    cmd: 'VERSION=${nextRelease.version} ./scripts/update-readme.sh'
   - path: '@semantic-release/git'
-    message: 'RELEASE: ${nextRelease.version}'
-    assets: ['CHANGELOG.md']
+    message: 'chore(release): ${nextRelease.version} [skip ci]'
+    assets:
+      - README.md
+      - CHANGELOG.md
 
 # Responsible for publishing the release.
 publish:

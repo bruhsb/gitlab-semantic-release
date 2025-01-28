@@ -1,46 +1,128 @@
-default:
-  image: docker:latest
-  services:
-    - docker:dind
+workflow:
+  rules:
+    # 1) Skip pipeline if commit is a tag or has a semantic-release commit message
+    - if: '$CI_COMMIT_TAG || $CI_COMMIT_MESSAGE =~ /^chore\\(release\\)/'
+      when: never
 
-variables:
-  project_name: MyProjectName
-  SEMANTIC_RELEASE_PACKAGE: ${project_name}
+    # 2) Run pipeline if triggered by a merge request event
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: always
 
+    # 3) Skip pipeline for branch pushes if there's an open MR referencing this commit
+    - if: '$CI_OPEN_MERGE_REQUESTS'
+      when: never
+
+    # 4) Otherwise, run pipeline
+    - when: always
+
+
+# Stages declaration
 stages:
   - build
+  - security_scan
   - release
+  - tag_image
 
-build-supplementary-image:
+
+# ------------------------------------------------------------------------------
+# BUILD AND PUSH DOCKER IMAGE
+# Only run if Dockerfile has changed, skip if commit is a tag
+# ------------------------------------------------------------------------------
+build_image:
   stage: build
+  image: docker:27.5.1
+  services:
+    - docker:27.5.1-dind
   script:
-    - docker login registry.gitlab.com -u mlonn -p ${GITLAB_TOKEN}
-    - docker pull registry.gitlab.com/mlonn/gitlab-semantic-release
-    - docker build -t registry.gitlab.com/mlonn/gitlab-semantic-release .
-    - docker push registry.gitlab.com/mlonn/gitlab-semantic-release
-  only:
-    - master
-  except:
-    refs:
-      - tags
-    variables:
-      - $CI_COMMIT_TITLE =~ /^RELEASE:.+$/
+    - echo "$CI_REGISTRY_TOKEN" | docker login registry.gitlab.com -u CI_REGISTRY_TOKEN --password-stdin
+    - docker build -t "$CI_REGISTRY_IMAGE:latest" .
+    - docker push "$CI_REGISTRY_IMAGE:latest"
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      when: never
+    - changes:
+      - Dockerfile
+      when: always
+    - when: never
 
-demo:
-  stage: build
+
+# ------------------------------------------------------------------------------
+# SECURE IMAGE SCANNERS
+# (Runs only if build_image finished successfully)
+# ------------------------------------------------------------------------------
+trivy_scan:
+  stage: security_scan
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: ["/bin/sh", "-c"]
+  needs:
+    - build_image
   script:
-    - echo "demo"
+    - trivy image "$CI_REGISTRY_IMAGE:latest"
+  rules:
+    - when: always
 
-release:
-  image: registry.gitlab.com/mlonn/gitlab-semantic-release
+trivy_misconfig:
+  stage: security_scan
+  image:
+    name: aquasec/trivy:latest
+    entrypoint: ["/bin/sh", "-c"]
+  needs:
+    - build_image
+  script:
+    - trivy image --image-config-scanners misconfig "$CI_REGISTRY_IMAGE:latest"
+  rules:
+    - when: always
+
+
+# ------------------------------------------------------------------------------
+# RUN SEMANTIC-RELEASE
+# (Runs only on main/master, and only if security_scan stage finished successfully)
+# ------------------------------------------------------------------------------
+semantic_release:
   stage: release
+  image: "$CI_REGISTRY_IMAGE:latest"
+  variables:
+    GITLAB_TOKEN: $GITLAB_TOKEN
   script:
-    - env
-    - npx semantic-release
-  only:
-    - master
-  except:
-    refs:
-      - tags
-    variables:
-      - $CI_COMMIT_TITLE =~ /^RELEASE:.+$/
+    - semantic-release
+  needs:
+    - trivy_scan
+    - trivy_misconfig
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      when: never
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master"'
+      when: always
+    - when: never
+
+
+# ------------------------------------------------------------------------------
+# TAG THE IMAGE WITH THE VERSION CREATED BY SEMANTIC-RELEASE
+# (Runs only on main/master, and only if release stage finished successfully)
+# ------------------------------------------------------------------------------
+tag_image:
+  stage: tag_image
+  image: docker:27.5.1-alpine3.21
+  services:
+    - docker:27.5.1-dind-alpine3.21
+  needs:
+    - semantic_release
+  script:
+    - docker login -u "$CI_REGISTRY" -p "$CI_REGISTRY_TOKEN" "$CI_REGISTRY"
+    - docker pull "$CI_REGISTRY_IMAGE:latest"
+    - if [ -f "$(git rev-parse --git-dir)/shallow" ]; then git fetch --prune --unshallow; else git fetch --prune; fi
+    - export RELEASE_VERSION="$(git describe --tags --abbrev=0 || echo 'latest')"
+    - |
+      if [ -z "$RELEASE_VERSION" ]; then
+        echo "Error: RELEASE_VERSION is empty. Ensure the repository has tags."
+        exit 1
+      fi
+    - docker tag "$CI_REGISTRY_IMAGE:latest" "$CI_REGISTRY_IMAGE:$RELEASE_VERSION"
+    - docker push "$CI_REGISTRY_IMAGE:$RELEASE_VERSION"
+  rules:
+    - if: '$CI_COMMIT_TAG'
+      when: never
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master"'
+      when: always
+    - when: never
