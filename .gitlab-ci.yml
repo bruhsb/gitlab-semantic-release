@@ -21,14 +21,17 @@ workflow:
     - if: '$CI_OPEN_MERGE_REQUESTS'
       when: never
 
-    # 4) If the Dockerfile changes, run pipeline
+    # 4) Skip pipeline if it's just a push of a blank new branch
+    - if: '$CI_COMMIT_BEFORE_SHA == "0000000000000000000000000000000000000000"'
+      when: never
+
+    # 5) If the Dockerfile changes, run pipeline
     - changes:
       - Dockerfile
       when: always
 
-    # 5) Otherwise, do not run pipeline
+    # 6) Otherwise, do not run pipeline
     - when: never
-
 # Stages declaration
 stages:
   - build
