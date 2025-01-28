@@ -1,4 +1,3 @@
-
 workflow:
   rules:
     # 1) Skip pipeline if commit is a tag or has a semantic-release commit message
@@ -56,7 +55,7 @@ trivy_scan:
   script:
     - trivy image --exit-code 0 "$CI_REGISTRY_IMAGE:latest"
   rules:
-    - when: always
+    - when: on_success
 
 trivy_misconfig:
   stage: security_scan
@@ -66,11 +65,12 @@ trivy_misconfig:
   script:
     - trivy image --exit-code 0 --image-config-scanners misconfig "$CI_REGISTRY_IMAGE:latest"
   rules:
-    - when: always
+    - when: on_success
 
 # ------------------------------------------------------------------------------
 # RUN SEMANTIC-RELEASE
 # (Runs only on main/master, after security_scan)
+# By default, if any job in security_scan fails, it won't proceed.
 # ------------------------------------------------------------------------------
 semantic_release:
   stage: release
@@ -85,29 +85,33 @@ semantic_release:
     GIT_DEPTH: 0
   script:
     - semantic-release
+    - npx semantic-release --dry-run | tee release_output.txt
+    - |
+      echo "RELEASE_VERSION=$(grep 'The next release version is' -m 1 release_output.txt | awk '{print $NF}')" > release_version.txt
+  artifacts:
+    paths:
+      - release_version.txt
   rules:
     - if: '$CI_COMMIT_TAG'
       when: never
     - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master"'
-      when: always
-    - when: never
-# ------------------------------------------------------------------------------
-# TAG THE IMAGE WITH THE VERSION CREATED BY SEMANTIC-RELEASE
-# (Runs only on main/master, after release)
-# ------------------------------------------------------------------------------
+      when: on_success
+
 tag_image:
   stage: tag_image
   image: docker:27.5.1-alpine3.21
   services:
     - docker:27.5.1-dind-alpine3.21
+  needs:
+    - job: semantic_release
+      artifacts: true
   script:
     - docker login -u "$CI_REGISTRY" -p "$CI_REGISTRY_TOKEN" "$CI_REGISTRY"
     - docker pull "$CI_REGISTRY_IMAGE:latest"
-    - if [ -f "$(git rev-parse --git-dir)/shallow" ]; then git fetch --prune --unshallow; else git fetch --prune; fi
-    - export RELEASE_VERSION="$(git describe --tags --abbrev=0 || echo 'latest')"
+    - source release_version.txt
     - |
       if [ -z "$RELEASE_VERSION" ]; then
-        echo "Error: RELEASE_VERSION is empty. Ensure the repository has tags."
+        echo "Error: RELEASE_VERSION is empty. Make sure semantic_release job ran successfully."
         exit 1
       fi
     - docker tag "$CI_REGISTRY_IMAGE:latest" "$CI_REGISTRY_IMAGE:$RELEASE_VERSION"
@@ -116,5 +120,4 @@ tag_image:
     - if: '$CI_COMMIT_TAG'
       when: never
     - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master"'
-      when: always
-    - when: never
+      when: on_success
