@@ -1,7 +1,7 @@
 # Semantic-Release for GitLab-CI
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Pipeline Status](https://gitlab.com/bruhsb/gitlab-semantic-release/badges/master/pipeline.svg)](https://gitlab.com/bruhsb/gitlab-semantic-release/pipelines)
+[![Pipeline Status](https://gitlab.com/bruhsb/gitlab-semantic-release/badges/main/pipeline.svg)](https://gitlab.com/bruhsb/gitlab-semantic-release/pipelines)
 [![Release Status](https://img.shields.io/badge/release-1.0.0-blue)](https://gitlab.com/bruhsb/gitlab-semantic-release/-/releases)
 
 ## Overview
