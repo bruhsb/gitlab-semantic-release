@@ -87,7 +87,7 @@ semantic_release:
   stage: release
   image: "$CI_REGISTRY_IMAGE:latest"
   before_script:
-    - cd $CI_PROJECT_DIR
+    - cd /builds/bruhsb/gitlab-semantic-release/
     - git config user.email "ci@localhost"
     - git config user.name "GitLab CI"
   variables:
