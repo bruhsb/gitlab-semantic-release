@@ -115,8 +115,7 @@ semantic_release:
     GIT_STRATEGY: clone
     GIT_DEPTH: 0
   script:
-    - semantic-release
-    - npx semantic-release --dry-run | tee release_output.txt
+    - semantic-release | tee release_output.txt
     - |
       echo "RELEASE_VERSION=$(grep 'The next release version is' -m 1 release_output.txt | awk '{print $NF}')" > release_version.txt
   artifacts:
