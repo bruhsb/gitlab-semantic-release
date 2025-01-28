@@ -1,0 +1,47 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Node modules
+node_modules/
+package-lock.json
+npm-debug.log
+
+# Build output
+dist/
+build/
+
+# Coverage
+coverage/
+
+# Cache or temp files
+.tmp/
+.cache/
+*.tmp
+
+# Docker-related
+*.tar
+*.pid
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Environment/config files
+.env
+.env.local
+
+# pre-commit related
+.pre-commit/
+
+# Yarn state
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# Ignore strategy-specific files if not needed
+# e.g. .release or .publish artifacts
