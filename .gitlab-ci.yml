@@ -149,7 +149,8 @@ semantic_release:
 
     # 2) If RELEASE_VERSION is empty, get the most recent tag from the repo
     if [ -z "$RELEASE_VERSION" ]; then
-      TAG_VERSION="$(git describe --tags --abbrev=0 2>/dev/null || echo 'latest')"
+      git fetch --tags
+      TAG_VERSION="$(git describe --tags --abbrev=0 2>/dev/null || echo '')"
     else
       TAG_VERSION="$RELEASE_VERSION"
     fi
