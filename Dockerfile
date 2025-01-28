@@ -15,14 +15,14 @@ RUN apk update && apk upgrade && \
       @semantic-release/npm \
       @semantic-release/release-notes-generator \
       semantic-release-slack-bot && \
-    # Address micromatch vulnerability (CVE-2024-4067) by installing a fixed version
+    # Address micromatch vulnerability (CVE-2024-4067)
     npm install -g micromatch@4.0.8 && \
     # Create a non-root user and group
     addgroup -S nodejs && adduser -S nodejs -G nodejs && \
-    # Clean up
+    # Ensure the GitLab build directory is owned by our non-root user
+    mkdir -p /builds && chown nodejs:nodejs /builds && \
     rm -rf /var/cache/apk/* /root/.npm /tmp/*
 
-# Switch to non-root user
 USER nodejs
 
 # Add a basic health check

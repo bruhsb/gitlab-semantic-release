@@ -1,3 +1,7 @@
+variables:
+  GIT_STRATEGY: clone
+  GIT_DEPTH: 0
+
 workflow:
   rules:
     # 1) Skip pipeline if commit is a tag or has a semantic-release commit message
@@ -82,6 +86,10 @@ trivy_misconfig:
 semantic_release:
   stage: release
   image: "$CI_REGISTRY_IMAGE:latest"
+  before_script:
+    - cd $CI_PROJECT_DIR
+    - git config user.email "ci@localhost"
+    - git config user.name "GitLab CI"
   variables:
     GITLAB_TOKEN: $GITLAB_TOKEN
   script:
@@ -125,4 +133,5 @@ tag_image:
       when: never
     - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master"'
       when: always
+
     - when: never
