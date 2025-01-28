@@ -1,6 +1,14 @@
-# Pipeline Workflow definition
+variables:
+  # By default, run a "normal" pipeline
+  # If the user sets PIPELINE_MODE to "full" or "FULL", then run all pipeline jobs
+  PIPELINE_MODE: "normal"
+
 workflow:
   rules:
+    # If PIPELINE_MODE is full or FULL, trigger the pipeline unconditionally
+    - if: '$PIPELINE_MODE == "full" || $PIPELINE_MODE == "FULL"'
+      when: always
+
     # 1) Skip pipeline if commit is a tag or has a semantic-release commit message
     - if: '$CI_COMMIT_TAG || $CI_COMMIT_MESSAGE =~ /^chore\\(release\\)/'
       when: never
@@ -18,7 +26,7 @@ workflow:
       - Dockerfile
       when: always
 
-    # 4) Otherwise, do not run pipeline
+    # 5) Otherwise, do not run pipeline
     - when: never
 
 # Stages declaration
@@ -42,6 +50,10 @@ build_image:
     - docker build -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA" .
     - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
   rules:
+    # If full pipeline, always run
+    - if: '$PIPELINE_MODE == "full" || $PIPELINE_MODE == "FULL"'
+      when: always
+    # Otherwise follow original rules
     - if: '$CI_COMMIT_TAG'
       when: never
     - changes:
@@ -62,6 +74,10 @@ trivy_scan:
     - trivy image "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
   allow_failure: true
   rules:
+    # If full pipeline, always run
+    - if: '$PIPELINE_MODE == "full" || $PIPELINE_MODE == "FULL"'
+      when: always
+    # Otherwise default to on_success
     - when: on_success
 
 trivy_misconfig:
@@ -73,6 +89,8 @@ trivy_misconfig:
     - trivy image --image-config-scanners misconfig "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
   allow_failure: true
   rules:
+    - if: '$PIPELINE_MODE == "full" || $PIPELINE_MODE == "FULL"'
+      when: always
     - when: on_success
 
 # ------------------------------------------------------------------------------
@@ -100,6 +118,8 @@ semantic_release:
     paths:
       - release_version.txt
   rules:
+    - if: '$PIPELINE_MODE == "full" || $PIPELINE_MODE == "FULL"'
+      when: always
     - if: '$CI_COMMIT_TAG'
       when: never
     - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master"'
@@ -161,6 +181,8 @@ tag_image:
     - *check_and_tag_function
     - check_and_tag || exit 1
   rules:
+    - if: '$PIPELINE_MODE == "full" || $PIPELINE_MODE == "FULL"'
+      when: always
     - if: '$CI_COMMIT_TAG'
       when: never
     - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master"'
