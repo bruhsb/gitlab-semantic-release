@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Pipeline Status](https://gitlab.com/<GROUP>/<PROJECT>/badges/main/pipeline.svg)](https://gitlab.com/<GROUP>/<PROJECT>/pipelines)
 [![Coverage Status](https://gitlab.com/<GROUP>/<PROJECT>/badges/main/coverage.svg)](https://gitlab.com/<GROUP>/<PROJECT>/-/jobs)
-[![Coverage Status](RELEASE_BADGE_PLACEHOLDER)](https://gitlab.com/<GROUP>/<PROJECT>/-/releases)
+[![Coverage Status](https://img.shields.io/badge/release-1.0.0-blue)](https://gitlab.com/<GROUP>/<PROJECT>/-/releases)
 
 ## Overview
 
