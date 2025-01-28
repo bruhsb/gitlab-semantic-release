@@ -13,7 +13,9 @@ workflow:
       when: never
 
     # 4) Otherwise, run pipeline
-    - when: always
+    - changes:
+      - Dockerfile
+      when: always
 
 # Stages declaration
 stages:
@@ -111,8 +113,8 @@ tag_image:
     - source release_version.txt
     - |
       if [ -z "$RELEASE_VERSION" ]; then
-        echo "Error: RELEASE_VERSION is empty. Make sure semantic_release job ran successfully."
-        exit 1
+        echo "WARN: There's no new tag! RELEASE_VERSION is empty. ... That's All Folks o/"
+        exit 0
       fi
     - docker tag "$CI_REGISTRY_IMAGE:latest" "$CI_REGISTRY_IMAGE:$RELEASE_VERSION"
     - docker push "$CI_REGISTRY_IMAGE:$RELEASE_VERSION"
