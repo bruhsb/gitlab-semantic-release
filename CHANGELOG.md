@@ -1,3 +1,13 @@
+## [2.0.0](https://gitlab.com/bruhsb/gitlab-semantic-release/compare/1.0.0...2.0.0) (2025-01-28)
+
+### ⚠ BREAKING CHANGES
+
+* This project was totally refactored, not compatible with previous code versions
+
+### Code Refactoring
+
+* Complete Refactor and Upgrade ([1028efd](https://gitlab.com/bruhsb/gitlab-semantic-release/commit/1028efdfe5b7bf99a67369052454710b722314c1))
+
 ## [1.0.0](https://gitlab.com/bruhsb/gitlab-semantic-release/compare/...1.0.0) (2025-01-28)
 
 ### ⚠ BREAKING CHANGES
