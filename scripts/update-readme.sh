@@ -11,8 +11,8 @@ fi
 
 echo "Updating README.md with version: $VERSION"
 
-# Example 2 (optional): If you wanted to dynamically update a badge with the new version,
-# you could define placeholders in README.md and then replace them here. For instance:
-sed -i "s|RELEASE_BADGE_PLACEHOLDER|https://img.shields.io/badge/release-$VERSION-blue|g" README.md
+# Updated line to replace any existing release version in the badge URL
+# with whatever you pass in (e.g., 2.3.1).
+sed -i "s|\(https://img.shields.io/badge/release-\)[^/]*\(-blue\)|\1$VERSION\2|g" README.md
 
 echo "README.md updated successfully."

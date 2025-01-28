@@ -59,10 +59,12 @@ The Dockerfile is used to create a Docker image with all necessary dependencies 
 
 This file defines the GitLab CI/CD pipeline for building and releasing the project.
 
+- **PIPELINE_MODE**: An environment variable that controls the pipeline execution mode. By default, it is set to "normal", but it can be set to "full" or "FULL" to trigger all pipeline jobs unconditionally.
 - **Stages**: Consists of `build`, `release`, `tag_image`, and `security_scan` stages.
 - **Jobs**:
   - `build_image`: Builds and pushes the Docker image.
   - `trivy_scan`: Scans the Docker image for security vulnerabilities. See [Trivy](https://github.com/aquasecurity/trivy) for more details.
+  - `trivy_misconfig`: Scans the Docker image for misconfigurations.
   - `semantic_release`: Runs `semantic-release` using the built Docker image.
   - `tag_image`: Tags the Docker image with the release version.
 
@@ -72,7 +74,7 @@ This file defines the GitLab CI/CD pipeline for building and releasing the proje
 - **GitLab Release**: Creates a release in GitLab with the new version.
 - **Changelog Update**: Updates `CHANGELOG.md` with release notes generated from commits.
 - **Commit & Push**: Commits and pushes changes back to the repository.
-- **Security Scanning**: Uses Trivy to scan Docker images for vulnerabilities.
+- **Security Scanning**: Uses Trivy to scan Docker images for vulnerabilities and misconfigurations.
 
 ### Pre-Commit Hooks
 
