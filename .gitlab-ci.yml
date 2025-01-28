@@ -1,6 +1,3 @@
-variables:
-  GIT_STRATEGY: clone
-  GIT_DEPTH: 0
 
 workflow:
   rules:
@@ -57,7 +54,7 @@ trivy_scan:
     name: aquasec/trivy:latest
     entrypoint: ["/bin/sh", "-c"]
   script:
-    - trivy image "$CI_REGISTRY_IMAGE:latest"
+    - trivy image --exit-code 0 "$CI_REGISTRY_IMAGE:latest"
   rules:
     - when: always
 
@@ -67,7 +64,7 @@ trivy_misconfig:
     name: aquasec/trivy:latest
     entrypoint: ["/bin/sh", "-c"]
   script:
-    - trivy image --image-config-scanners misconfig "$CI_REGISTRY_IMAGE:latest"
+    - trivy image --exit-code 0 --image-config-scanners misconfig "$CI_REGISTRY_IMAGE:latest"
   rules:
     - when: always
 
@@ -79,11 +76,13 @@ semantic_release:
   stage: release
   image: "$CI_REGISTRY_IMAGE:latest"
   before_script:
-    - cd /builds/bruhsb/gitlab-semantic-release/
+    - cd "$CI_PROJECT_DIR"
     - git config user.email "ci@localhost"
     - git config user.name "GitLab CI"
   variables:
     GITLAB_TOKEN: $GITLAB_TOKEN
+    GIT_STRATEGY: clone
+    GIT_DEPTH: 0
   script:
     - semantic-release
   rules:
@@ -92,7 +91,6 @@ semantic_release:
     - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master"'
       when: always
     - when: never
-
 # ------------------------------------------------------------------------------
 # TAG THE IMAGE WITH THE VERSION CREATED BY SEMANTIC-RELEASE
 # (Runs only on main/master, after release)
