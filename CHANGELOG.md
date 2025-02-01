@@ -1,3 +1,9 @@
+## [2.1.0](https://gitlab.com/bruhsb/gitlab-semantic-release/compare/2.0.0...2.1.0) (2025-02-01)
+
+### Features
+
+* Installing Helm binary ([746be8d](https://gitlab.com/bruhsb/gitlab-semantic-release/commit/746be8dfcb1dcfa13c84e82d519510f8f762a060))
+
 ## [2.0.0](https://gitlab.com/bruhsb/gitlab-semantic-release/compare/1.0.0...2.0.0) (2025-01-28)
 
 ### ⚠ BREAKING CHANGES
