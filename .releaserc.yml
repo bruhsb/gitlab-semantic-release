@@ -59,7 +59,7 @@ prepare:
   - path: '@semantic-release/exec'
     cmd: 'VERSION=${nextRelease.version} ./scripts/update-readme.sh'
   - path: '@semantic-release/git'
-    message: 'chore(release): ${nextRelease.version} [skip ci]'
+    message: 'chore(release): Publishing Release: ${nextRelease.version}'
     assets:
       - README.md
       - CHANGELOG.md
